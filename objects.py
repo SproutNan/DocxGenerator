@@ -1,5 +1,5 @@
 import json
-import base64
+from base64_coder import *
 
 # 学生
 class student:
@@ -42,8 +42,6 @@ class item:
         self.use = "奖品"
         # 组别，允许添加分组，不添加分组即为默认
         self.group = "默认"
-        # 标签，允许添加标签，没有实际意义，只是为了方便查找
-        self.tag = "无"
         # 发票
         self.invoice = None
         # 相关说明
@@ -57,7 +55,6 @@ class item:
             "total": self.total,
             "use": self.use,
             "group": self.group,
-            "tag": self.tag,
             "invoice": self.invoice,
             "note": self.note
         }
@@ -69,7 +66,6 @@ class item:
         self.total = dict["total"]
         self.use = dict["use"]
         self.group = dict["group"]
-        self.tag = dict["tag"]
         self.invoice = dict["invoice"]
         self.note = dict["note"]
         return self
@@ -103,13 +99,16 @@ class activity:
         self.place = place
 
     def to_json(self):
-        dump_dict = self.__dict__
+        dump_dict = self.__dict__.copy()
         # 处理不平凡结构
         dump_director = dump_dict["director"].to_dict()
         dump_item = [it.to_dict() for it in dump_dict["item"]]
         # 处理新闻稿，这个新闻稿是bytes格式的，需要转换成base64
         if dump_dict["news"] is not None:
-            dump_dict["news"]["content"] = base64.b64encode(dump_dict["news"]["content"]).decode('utf-8')
+            dump_dict["news"]["content"] = to_base64(dump_dict["news"]["content"])
+        # 处理策划书
+        if dump_dict["plan"] is not None:
+            dump_dict["plan"]["content"] = to_base64(dump_dict["plan"]["content"])
         dump_dict["director"] = dump_director
         dump_dict["item"] = dump_item
         return json.dumps(dump_dict)
@@ -125,11 +124,12 @@ class activity:
         load_dict["item"] = load_items
         # 处理新闻稿，这个新闻稿是base64格式的，需要转换成bytes
         if load_dict["news"] is not None:
-            load_dict["news"]["content"] = base64.b64decode(load_dict["news"]["content"])
+            load_dict["news"]["content"] = from_base64(load_dict["news"]["content"])
+        # 处理策划书
+        if load_dict["plan"] is not None:
+            load_dict["plan"]["content"] = from_base64(load_dict["plan"]["content"])
         self.name = load_dict["name"]
         self.director = load_dict["director"]
-        print(self.director)
-        print(type(self.director))
         self.time = load_dict["time"]
         self.place = load_dict["place"]
         self.plan = load_dict["plan"]
