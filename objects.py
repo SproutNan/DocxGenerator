@@ -139,7 +139,7 @@ class activity:
         return self
 
     def info(self):
-        return f"【负责人】{self.director.info()}，【时间】{self.time}，【地点】{self.place}"
+        return f"【负责人】{self.director.info()}，【时间】{self.time}，【策划书】{'有' if self.plan is not None else '无'}，【新闻稿】{'有' if self.news is not None else '无'}"
 
     def __repr__(self):
         return self.name
