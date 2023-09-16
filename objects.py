@@ -1,15 +1,17 @@
 import json
+import hashlib
+from hashlib import md5
 from base64_coder import *
 
 # 学生
 class student:
-    def __init__(self, name: str=None, stuid: str=None, phone: str=None, email: str=None):
-        self.name = name
-        self.stuid = stuid
-        self.phone = phone
-        self.email = email
+    def __init__(self, name: str="None", stuid: str="None", phone: str="None", email: str="None") -> None:
+        self.name: str = name
+        self.stuid: str = stuid
+        self.phone: str = phone
+        self.email: str = email
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "name": self.name,
             "stuid": self.stuid,
@@ -24,30 +26,33 @@ class student:
         self.email = dict["email"]
         return self
 
-    def info(self):
+    def info(self) -> str:
         return f"{self.name}({self.stuid}), {self.phone}"
+    
+    def md5(self) -> str:
+        return md5(self.name + self.stuid + self.phone + self.email).hexdigest()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
     
 # 物品
 class item:
-    def __init__(self, name: str=None, count: int=None, price: float=None):
-        self.name = name
-        self.count = count
-        self.price = price
+    def __init__(self, name: str="None", count: int=0, price: float=0) -> None:
+        self.name: str = name
+        self.count: int = count
+        self.price: float = price
         # 按照默认，总价应该是count*price，但是涉及淘金币等，允许手动修改
-        self.total = None
+        self.total: float = None
         # 用途，奖品/其他
-        self.use = "奖品"
+        self.use: str = "奖品"
         # 组别，允许添加分组，不添加分组即为默认
-        self.group = "默认"
+        self.group: str = "默认"
         # 发票
-        self.invoice = None
+        self.invoice: str = None
         # 相关说明
-        self.note = None
+        self.note: str = None
     
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "name": self.name,
             "count": self.count,
@@ -70,50 +75,52 @@ class item:
         self.note = dict["note"]
         return self
     
-    def __str__(self):
-        return self.name
+    def md5(self) -> str:
+        return md5(self.name + str(self.count) + str(self.price) + str(self.total) + self.use + self.group + self.invoice + self.note).hexdigest()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
 # 活动
 class activity:
-    def __init__(self):
-        self.name = None
-        self.director = None
-        self.time = None
-        self.place = None
+    def __init__(self) -> None:
+        self.name: str = None
+        self.director: student = None
+        self.time: str = None
+        self.place: str = None
         # 策划书
-        self.plan = None
+        self.plan: str = None
         # 活动物资
-        self.item = []
+        self.item: list[item] = []
         # 新闻稿
-        self.news = None
+        self.news: str = None
         # 创建的物资分组
-        self.groups = ["默认"]
+        self.groups: list[item] = ["默认"]
 
-    def init(self, name: str, director: student, time: str, place: str):
+    def from_para(self, name: str, director: student, time: str, place: str):
         self.name = name
         self.director = director
         self.time = time
         self.place = place
+        return self
 
-    def to_json(self):
+    def to_json(self) -> str:
+        # 因为要转成json，所以先转成dict
         dump_dict = self.__dict__.copy()
         # 处理不平凡结构
         dump_director = dump_dict["director"].to_dict()
         dump_item = [it.to_dict() for it in dump_dict["item"]]
         # 处理新闻稿，这个新闻稿是bytes格式的，需要转换成base64
         if dump_dict["news"] is not None:
-            dump_dict["news"]["content"] = to_base64(dump_dict["news"]["content"])
+            dump_dict["news"] = to_base64(dump_dict["news"])
         # 处理策划书
         if dump_dict["plan"] is not None:
-            dump_dict["plan"]["content"] = to_base64(dump_dict["plan"]["content"])
+            dump_dict["plan"] = to_base64(dump_dict["plan"])
         dump_dict["director"] = dump_director
         dump_dict["item"] = dump_item
         return json.dumps(dump_dict)
     
-    def from_json(self, json_str):
+    def from_json(self, json_str) -> None:
         load_dict = json.loads(json_str)
         load_student = student().from_dict(load_dict["director"])
         load_dict["director"] = load_student
@@ -124,10 +131,10 @@ class activity:
         load_dict["item"] = load_items
         # 处理新闻稿，这个新闻稿是base64格式的，需要转换成bytes
         if load_dict["news"] is not None:
-            load_dict["news"]["content"] = from_base64(load_dict["news"]["content"])
+            load_dict["news"] = from_base64(load_dict["news"])
         # 处理策划书
         if load_dict["plan"] is not None:
-            load_dict["plan"]["content"] = from_base64(load_dict["plan"]["content"])
+            load_dict["plan"] = from_base64(load_dict["plan"])
         self.name = load_dict["name"]
         self.director = load_dict["director"]
         self.time = load_dict["time"]
@@ -138,8 +145,16 @@ class activity:
         self.groups = load_dict["groups"]
         return self
 
-    def info(self):
+    def info(self) -> str:
         return f"【负责人】{self.director.info()}，【时间】{self.time}，【策划书】{'有' if self.plan is not None else '无'}，【新闻稿】{'有' if self.news is not None else '无'}"
 
-    def __repr__(self):
+    def md5(self) -> str:
+        part1 = self.name + self.time + self.place
+        part2 = self.director.md5().hexdigest()
+        part3 = self.plan + self.news
+        part4 = sum([i.md5().hexdigest() for i in self.item])
+        part5 = ",".join(self.groups)
+        return md5(part1 + part2 + part3 + part4 + part5).hexdigest()
+
+    def __repr__(self) -> str:
         return self.name

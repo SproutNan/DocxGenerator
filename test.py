@@ -1,7 +1,7 @@
 from objects import *
 
 test_activity = activity()
-test_activity.init(
+test_activity.from_para(
     name="测试活动",
     director=student(
         name="测试负责人",

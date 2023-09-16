@@ -28,7 +28,7 @@ def create_activity_record():
         activity_director["email"]
     )
     activity_new = activity()
-    activity_new.init(
+    activity_new.from_para(
         activity_info["name"],
         activity_director,
         activity_info["time"],
@@ -51,6 +51,7 @@ def activity_operating(act: activity):
         return
     while True:
         # 创建一个按钮菜单
+        print(type(act))
         action = actions(label=f"对[{act.name}]的操作", buttons=[
             {'label': "管理活动概况", 'value': "modify_info"},
             {'label': "管理活动物资", 'value': "modify_item"},
