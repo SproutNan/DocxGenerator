@@ -69,7 +69,7 @@ def modify_item_add(act: activity):
             break
 
 # 手动输入信息 item 是一个 list 的迭代器
-def modify_item_add_manual(act: activity, iterator = None):
+def modify_item_add_manual(act: activity, iterator = None, invoice: bytes = None):
     # 遍历下一个
     curItem = next(iterator, "nothing") if iterator is not None else None
     if curItem == "nothing":
@@ -112,10 +112,12 @@ def modify_item_add_manual(act: activity, iterator = None):
         item_info["invoice"]["content"] = to_base64(
             item_info["invoice"]["content"])
         item_new.invoice = item_info["invoice"]
+    else:
+        item_new.invoice = to_base64(invoice)
     act.item.append(item_new)
     toast("添加成功！")
     if iterator is not None:
-        modify_item_add_manual(act, iterator)
+        modify_item_add_manual(act, iterator, invoice)
 
 # 发票自动识别
 def modify_item_add_ocrinv(act: activity):
@@ -123,8 +125,7 @@ def modify_item_add_ocrinv(act: activity):
                 max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
     image = Image.open(io.BytesIO(file["content"]))
     items = handle_invoice(image)
-    print(type(iter(items)))
-    modify_item_add_manual(act, iter(items))
+    modify_item_add_manual(act, iter(items), file["content"])
     # toast("即将上线，敬请期待！")
 
 # 查看物资
