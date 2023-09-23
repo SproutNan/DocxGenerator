@@ -49,9 +49,9 @@ def modify_act_info(act: activity):
     act.time = new_act_info["time"]
     act.place = new_act_info["place"]
     act.director = student(
-        new_act_director["name"], 
-        new_act_director["stuid"], 
-        new_act_director["phone"], 
+        new_act_director["name"],
+        new_act_director["stuid"],
+        new_act_director["phone"],
         new_act_director["email"]
     )
     toast("修改成功！")
@@ -91,8 +91,8 @@ def modify_act_news(act: activity):
         {'label': "预览当前新闻稿", 'value': "modify_act_news_preview"},
         {'label': "返回上一级", 'value': "back"}
     ], help_text=f"详细信息：{act.info()}")
-    
-    if action == "modify_act_news_upload":  
+
+    if action == "modify_act_news_upload":
         modify_act_news_upload(act)
     elif action == "modify_act_news_preview":
         modify_act_news_preview(act)
