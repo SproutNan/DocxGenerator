@@ -8,6 +8,8 @@ from modify_act import *
 from modify_item import *
 
 # 创建新活动
+
+
 def create_activity_record():
     activity_info = input_group("请输入活动信息：", [
         input("活动名称：", type="text", name="name", required=True),
@@ -17,14 +19,17 @@ def create_activity_record():
     activity_director = input_group("请输入活动负责人：", [
         input("姓名：", type="text", name="name", required=True),
         # 学号以两个英文字母开头，后面跟着8位数字
-        input("学号：", type="text", name="stuid", pattern=r"[a-zA-Z]{2}\d{8}", help_text="如：PB20000001", required=True),
-        input("手机号：", type="text", name="phone", pattern=r"\d{11}", required=True),
-        input("邮箱：", type="text", name="email", pattern=r".+@.+", required=True)
+        input("学号：", type="text", name="stuid",
+              pattern=r"[a-zA-Z]{2}\d{8}", help_text="如：PB20000001", required=True),
+        input("手机号：", type="text", name="phone",
+              pattern=r"\d{11}", required=True),
+        input("邮箱：", type="text", name="email",
+              pattern=r".+@.+", required=True)
     ])
     activity_director = student(
-        activity_director["name"], 
-        activity_director["stuid"], 
-        activity_director["phone"], 
+        activity_director["name"],
+        activity_director["stuid"],
+        activity_director["phone"],
         activity_director["email"]
     )
     activity_new = activity()
@@ -37,24 +42,29 @@ def create_activity_record():
     return activity_new
 
 # 下载存档
+
+
 def download(act: activity):
     # 下载activity的json版本
     serialized = act.to_json()
     # 提供文件下载
-    put_file(f"{act.name}_{int(time())}.json", content=serialized.encode("utf-8"))
+    put_file(f"{act.name}_{int(time())}.json",
+             content=serialized.encode("utf-8"))
     # 退出
     return None
 
 # 为活动添加策划书，物资等
+
+
 def activity_operating(act: activity):
     if act is None:
         return
     while True:
         # 创建一个按钮菜单
-        print(type(act))
         action = actions(label=f"对[{act.name}]的操作", buttons=[
             {'label': "管理活动概况", 'value': "modify_info"},
             {'label': "管理活动物资", 'value': "modify_item"},
+            {'label': "合并存档", 'value': "merge"},
             {'label': "下载存档", 'value': "download"},
             {'label': "退出对此活动的操作", 'value': "back"}
         ], help_text=f"详细信息：{act.info()}")
@@ -62,6 +72,7 @@ def activity_operating(act: activity):
         value_map = {
             "modify_info": modify_info,
             "modify_item": modify_item,
+            "merge": merge,
             "download": download,
             "back": None
         }
@@ -69,12 +80,14 @@ def activity_operating(act: activity):
             break
         else:
             value_map[action](act)
- 
+
+
 def docx_generator_main():
     # 文字说明
     put_markdown("# 校芳草社活动报销处理系统")
     put_markdown("- 您只需要按照提示输入相关信息，系统会自动创建活动报销用的docx文件供打印。")
-    put_markdown("- 注意，本系统是**脱机系统**，不保存您的任何信息，也不会上传到任何服务器。您在完成编辑之后，请下载文件并保存到本地。如果需要二次修改，请将之前保存的文件上传到浏览器打开。（你可以理解为需要手动存档读档，这是为了减轻服务器端的开销）")
+    put_markdown(
+        "- 注意，本系统是**脱机系统**，不保存您的任何信息，也不会上传到任何服务器。您在完成编辑之后，请下载文件并保存到本地。如果需要二次修改，请将之前保存的文件上传到浏览器打开。（你可以理解为需要手动存档读档，这是为了减轻服务器端的开销）")
     while True:
         put_markdown("---")
         # 选择创建还是读取

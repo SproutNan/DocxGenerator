@@ -8,9 +8,8 @@ from PIL import Image
 import io
 from invoice import *
 
+
 # 管理活动物资
-
-
 def modify_item(act: activity):
     action = actions(label=f"管理活动[{act.name}]的物资", buttons=[
         {'label': "管理物资标签", 'value': "modify_item_label"},
@@ -29,13 +28,12 @@ def modify_item(act: activity):
     else:
         value_map[action](act)
 
+
 # 管理物资标签
-
-
 def modify_item_label(act: activity):
     group_str = "，".join(act.groups)
     group_str = input("请修改下方的物资分组，组名与组名之间用「，」分割", type="text",
-                    value=group_str, required=True, help_text="每个组名不能超过6个字，最多不超过30个组")
+                      value=group_str, required=True, help_text="每个组名不能超过6个字，最多不超过30个组")
     group_str = group_str.replace(", ", ",")
     group_str = group_str.replace(",", "，")
     groups = group_str.split("，")
@@ -49,9 +47,9 @@ def modify_item_label(act: activity):
     act.groups = groups
     put_markdown("- 修改物资标签成功！")
 
+
+
 # 添加物资
-
-
 def modify_item_add(act: activity):
     while True:
         action = actions(label=f"添加物资方式", buttons=[
@@ -68,8 +66,9 @@ def modify_item_add(act: activity):
         if actions("是否继续添加物资？", ["是", "否"]) == "否":
             break
 
+
 # 手动输入信息 item 是一个 list 的迭代器
-def modify_item_add_manual(act: activity, iterator = None, invoice: bytes = None):
+def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
     # 遍历下一个
     curItem = next(iterator, "nothing") if iterator is not None else None
     if curItem == "nothing":
@@ -80,11 +79,11 @@ def modify_item_add_manual(act: activity, iterator = None, invoice: bytes = None
         input("名称", type="text", name="name", validate=lambda name: "名称不能超过15个字" if len(
             name) > 15 else None, required=True, value=curItem["名称"] if curItem is not None else None),
         input("数量", type="number", name="count", validate=lambda count: "数量必须是正整数" if count <=
-                0 else None, required=True, value=curItem["数量"] if curItem is not None else None),
+              0 else None, required=True, value=curItem["数量"] if curItem is not None else None),
         input("单价", type="float", name="price", validate=lambda price: "单价必须是正数" if price <=
-                0 else None, required=True, value=curItem["单价"] if curItem is not None else None),
+              0 else None, required=True, value=curItem["单价"] if curItem is not None else None),
         input("总价", type="float", name="total", validate=lambda total: "总价必须是正数" if total is not None and total <=
-                0 else None, help_text="此空如果为空则自动计算为 数量*单价，如果用了优惠等可以手动输入", value=curItem["总价"] if curItem is not None else None),
+              0 else None, help_text="此空如果为空则自动计算为 数量*单价，如果用了优惠等可以手动输入", value=curItem["总价"] if curItem is not None else None),
         # 选择题
         select("用途", options=["奖品", "物资", "其他"], name="use", required=True),
         input("备注", type="text", name="note"),
@@ -92,7 +91,7 @@ def modify_item_add_manual(act: activity, iterator = None, invoice: bytes = None
 
     if iterator is None:
         inputs.insert(-1, file_upload("发票", name="invoice", accept=".jpg,.png,.pdf", max_size=1024 * 1024 * 2,
-                                    help_text="请上传发票的扫描件或者照片，大小不得超过2M，如果不上传则默认使用纸质发票"), )
+                                      help_text="请上传发票的扫描件或者照片，大小不得超过2M，如果不上传则默认使用纸质发票"), )
 
     item_info = input_group("请输入物资信息：", inputs)
     item_new = item(
@@ -119,20 +118,22 @@ def modify_item_add_manual(act: activity, iterator = None, invoice: bytes = None
     if iterator is not None:
         modify_item_add_manual(act, iterator, invoice)
 
+
 # 发票自动识别
 def modify_item_add_ocrinv(act: activity):
     file = file_upload("请上传发票", accept=".jpg,.png,.pdf",
-                max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
+                       max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
     image = Image.open(io.BytesIO(file["content"]))
     items = handle_invoice(image)
     modify_item_add_manual(act, iter(items), file["content"])
     # toast("即将上线，敬请期待！")
 
+
 # 查看物资
 def modify_item_show(act: activity):
-    put_table_items=[[span('组别', row=2), span('详情', col=7)],
-                        ['名称', '数量', '单价', '总价', '用途', '发票', '备注']]
-    put_items=[]
+    put_table_items = [[span('组别', row=2), span('详情', col=7)],
+                       ['名称', '数量', '单价', '总价', '用途', '发票', '备注']]
+    put_items = []
     for it in act.item:
         put_items.append([
             it.group,
@@ -159,3 +160,19 @@ def modify_item_show(act: activity):
     put_table_items.append([span("合计", col=7), span(
         sum([it.total if it.total else 0 for it in act.item]), col=1)])
     popup("物资清单", put_table(put_table_items), size=PopupSize.LARGE)
+
+
+def merge(act: activity):
+    file = file_upload("请上传要合并的活动存档", accept=".json", max_size=1024 *
+                          1024 * 2, required=True, help_text="请上传要合并的活动存档，大小不得超过2M")
+    try:
+        act_merge = activity()
+        act_merge.from_json(file["content"].decode("utf-8"))
+        names = [it.name for it in act.item]
+        for it in act_merge.item:
+            if it.name not in names:
+                act.item.append(it)
+        toast("合并成功！")
+    except Exception as e:
+        print(e)
+        popup("错误提示", "合并失败，请检查文件格式是否正确。\n如果您是从本系统下载的文件，请检查是否曾经修改过文件内容。")
