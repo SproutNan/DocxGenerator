@@ -6,6 +6,7 @@ from time import time
 from base64_coder import *
 from modify_act import *
 from modify_item import *
+from module_output import *
 
 # 创建新活动
 
@@ -104,10 +105,9 @@ def docx_generator_main():
                 activitys.from_json(activity_file["content"].decode("utf-8"))
                 if action == "convert":
                     # 转换为docx
-                    # activitys.to_docx()
+                    fill_applicant_form(activitys)
                     # 下载docx
                     # put_file(f"{activitys.name}_{int(time())}.docx", content=activitys.docx)
-                    pass
             except:
                 popup("错误提示", "读取活动存档失败，请检查文件格式是否正确。\n如果您是从本系统下载的文件，请检查是否曾经修改过文件内容。")
                 continue

@@ -95,7 +95,7 @@ class activity:
         # 新闻稿
         self.news: str = None
         # 创建的物资分组
-        self.groups: list[item] = ["默认"]
+        self.groups: list[str] = ["默认"]
 
     def from_para(self, name: str, director: student, time: str, place: str):
         self.name = name
