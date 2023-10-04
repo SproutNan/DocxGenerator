@@ -1,9 +1,10 @@
-from objects import *
+from modules.base64_coder import *
+from classes.activity import activity
+from classes.student import student
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.pin import *
 from time import time
-from base64_coder import *
 
 # 管理活动概况
 def modify_info(act: activity):

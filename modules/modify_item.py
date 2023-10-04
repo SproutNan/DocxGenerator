@@ -1,12 +1,12 @@
-from objects import *
+import io
+from PIL import Image
+from classes.activity import activity
+from classes.item import item
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.pin import *
-from time import time
-from base64_coder import *
-from PIL import Image
-import io
-from invoice import *
+from modules.base64_coder import *
+from modules.invoice import *
 
 
 # 管理活动物资
@@ -48,7 +48,6 @@ def modify_item_label(act: activity):
     put_markdown("- 修改物资标签成功！")
 
 
-
 # 添加物资
 def modify_item_add(act: activity):
     while True:
@@ -86,7 +85,10 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
               0 else None, help_text="此空如果为空则自动计算为 数量*单价，如果用了优惠等可以手动输入", value=curItem["总价"] if curItem is not None else None),
         # 选择题
         select("用途", options=["奖品", "物资", "其他"], name="use", required=True),
+        select("组别", options=act.groups, name="group", required=True),
         input("备注", type="text", name="note"),
+        file_upload("网购购买截图", name="screenshot", accept=".jpg,.png", max_size=1024 * 1024 * 2,
+                    help_text="请上传网购购买截图，大小不得超过2M，如果不上传则认为是线下购买")
     ]
 
     if iterator is None:
@@ -107,13 +109,20 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
     item_new.group = item_info["group"]
     item_new.use = item_info["use"]
     item_new.note = item_info["note"]
+    # 发票
     if iterator is None and item_info["invoice"] is not None:
         item_info["invoice"]["content"] = to_base64(
             item_info["invoice"]["content"])
         item_new.invoice = item_info["invoice"]
     else:
         item_new.invoice = to_base64(invoice)
-    act.item.append(item_new)
+    # 购买截图
+    if item_info["screenshot"] is not None:
+        item_info["screenshot"]["content"] = to_base64(
+            item_info["screenshot"]["content"])
+        item_new.screenshot = item_info["screenshot"]
+    # 添加到活动物资中
+    act.items.append(item_new)
     toast("添加成功！")
     if iterator is not None:
         modify_item_add_manual(act, iterator, invoice)
@@ -126,7 +135,6 @@ def modify_item_add_ocrinv(act: activity):
     image = Image.open(io.BytesIO(file["content"]))
     items = handle_invoice(image)
     modify_item_add_manual(act, iter(items), file["content"])
-    # toast("即将上线，敬请期待！")
 
 
 # 查看物资
@@ -134,7 +142,7 @@ def modify_item_show(act: activity):
     put_table_items = [[span('组别', row=2), span('详情', col=7)],
                        ['名称', '数量', '单价', '总价', '用途', '发票', '备注']]
     put_items = []
-    for it in act.item:
+    for it in act.items:
         put_items.append([
             it.group,
             it.name,
@@ -143,7 +151,7 @@ def modify_item_show(act: activity):
             it.total,
             it.use,
             "纸质发票" if it.invoice is None else "发票已上传",
-            it.note,
+            f"{it.note}, 有购买截图" if it.screenshot is not None else it.note,
         ])
     put_items.sort(key=lambda x: x[0])
     put_table_items.extend(put_items)
@@ -154,24 +162,25 @@ def modify_item_show(act: activity):
         put_table_items.append([
             span(group, col=2),
             span(
-                sum([it.total if it.total else 0 for it in act.item if it.group == group]), col=6)
+                sum([it.total if it.total else 0 for it in act.items if it.group == group]), col=6)
         ])
     put_table_items.append([span("", col=8)])
     put_table_items.append([span("合计", col=7), span(
-        sum([it.total if it.total else 0 for it in act.item]), col=1)])
+        sum([it.total if it.total else 0 for it in act.items]), col=1)])
     popup("物资清单", put_table(put_table_items), size=PopupSize.LARGE)
 
 
+# 合并存档
 def merge(act: activity):
     file = file_upload("请上传要合并的活动存档", accept=".json", max_size=1024 *
                           1024 * 2, required=True, help_text="请上传要合并的活动存档，大小不得超过2M")
     try:
         act_merge = activity()
         act_merge.from_json(file["content"].decode("utf-8"))
-        names = [it.name for it in act.item]
-        for it in act_merge.item:
+        names = [it.name for it in act.items]
+        for it in act_merge.items:
             if it.name not in names:
-                act.item.append(it)
+                act.items.append(it)
         toast("合并成功！")
     except Exception as e:
         print(e)

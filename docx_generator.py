@@ -1,15 +1,15 @@
-from objects import *
+from classes.activity import *
+from classes.item import *
+from classes.student import *
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.pin import *
 from time import time
-from base64_coder import *
-from modify_act import *
-from modify_item import *
-from module_output import *
-
-# 创建新活动
-
+from modules.base64_coder import *
+from modules.invoice import *
+from modules.modify_act import *
+from modules.modify_item import *
+from modules.output import *
 
 def create_activity_record():
     activity_info = input_group("请输入活动信息：", [
@@ -43,8 +43,6 @@ def create_activity_record():
     return activity_new
 
 # 下载存档
-
-
 def download(act: activity):
     # 下载activity的json版本
     serialized = act.to_json()
@@ -55,8 +53,6 @@ def download(act: activity):
     return None
 
 # 为活动添加策划书，物资等
-
-
 def activity_operating(act: activity):
     if act is None:
         return
@@ -105,7 +101,7 @@ def docx_generator_main():
                 activitys.from_json(activity_file["content"].decode("utf-8"))
                 if action == "convert":
                     # 转换为docx
-                    fill_applicant_form(activitys)
+                    to_docx(activitys)
                     # 下载docx
                     # put_file(f"{activitys.name}_{int(time())}.docx", content=activitys.docx)
             except Exception as e:
