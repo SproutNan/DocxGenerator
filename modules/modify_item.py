@@ -10,23 +10,24 @@ from modules.invoice import *
 
 
 # 管理活动物资
-def modify_item(act: activity):
-    action = actions(label=f"管理活动[{act.name}]的物资", buttons=[
-        {'label': "管理物资标签", 'value': "modify_item_label"},
-        {'label': "添加物资", 'value': "modify_item_add"},
-        {'label': "查看物资", 'value': "modify_item_show"},
-        {'label': "返回上一级", 'value': "back"}
-    ], help_text=f"详细信息：{act.info()}")
-    value_map = {
-        "modify_item_label": modify_item_label,
-        "modify_item_add": modify_item_add,
-        "modify_item_show": modify_item_show,
-        "back": None
-    }
-    if value_map[action] is None:
-        return
-    else:
-        value_map[action](act)
+def modify_item(act: activity) -> bool:
+    while True:
+        action = actions(label=f"管理活动[{act.name}]的物资", buttons=[
+            {'label': "管理物资标签", 'value': "modify_item_label"},
+            {'label': "添加物资", 'value': "modify_item_add"},
+            {'label': "查看物资", 'value': "modify_item_show"},
+            {'label': "返回上一级", 'value': "back"}
+        ], help_text=f"详细信息：{act.info()}")
+        value_map = {
+            "modify_item_label": modify_item_label,
+            "modify_item_add": modify_item_add,
+            "modify_item_show": modify_item_show,
+            "back": None
+        }
+        if value_map[action] is None:
+            break
+        else:
+            value_map[action](act)
 
 
 # 管理物资标签
@@ -56,9 +57,18 @@ def modify_item_add(act: activity):
             {'label': "发票自动识别", 'value': "modify_item_add_ocrinv"},
         ])
         if action == "modify_item_add_manual":
-            modify_item_add_manual(act)
+            try:
+                if not modify_item_add_manual(act):
+                    continue
+            except Exception as e:
+                popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
+                continue
         elif action == "modify_item_add_ocrinv":
-            modify_item_add_ocrinv(act)
+            try:
+                modify_item_add_ocrinv(act)
+            except Exception as e:
+                popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
+                continue
         else:
             return
 
@@ -85,7 +95,6 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
               0 else None, help_text="此空如果为空则自动计算为 数量*单价，如果用了优惠等可以手动输入", value=curItem["总价"] if curItem is not None else None),
         # 选择题
         select("用途", options=["奖品", "物资", "其他"], name="use", required=True),
-        select("组别", options=act.groups, name="group", required=True),
         input("备注", type="text", name="note"),
         file_upload("网购购买截图", name="screenshot", accept=".jpg,.png", max_size=1024 * 1024 * 2,
                     help_text="请上传网购购买截图，大小不得超过2M，如果不上传则认为是线下购买")
@@ -139,6 +148,10 @@ def modify_item_add_ocrinv(act: activity):
 
 # 查看物资
 def modify_item_show(act: activity):
+    if len(act.items) == 0:
+        toast("当前活动没有物资，请先添加物资")
+        return
+    
     put_table_items = [[span('组别', row=2), span('详情', col=7)],
                        ['名称', '数量', '单价', '总价', '用途', '发票', '备注']]
     put_items = []
@@ -171,7 +184,7 @@ def modify_item_show(act: activity):
 
 
 # 合并存档
-def merge(act: activity):
+def merge(act: activity) -> bool:
     file = file_upload("请上传要合并的活动存档", accept=".json", max_size=1024 *
                           1024 * 2, required=True, help_text="请上传要合并的活动存档，大小不得超过2M")
     try:
