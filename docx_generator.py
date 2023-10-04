@@ -108,7 +108,8 @@ def docx_generator_main():
                     fill_applicant_form(activitys)
                     # 下载docx
                     # put_file(f"{activitys.name}_{int(time())}.docx", content=activitys.docx)
-            except:
+            except Exception as e:
+                print(e)
                 popup("错误提示", "读取活动存档失败，请检查文件格式是否正确。\n如果您是从本系统下载的文件，请检查是否曾经修改过文件内容。")
                 continue
         elif action == "create":

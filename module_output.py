@@ -5,9 +5,13 @@ from pywebio.pin import *
 from time import time
 from base64_coder import *
 from docx import Document
+from docx.shared import Pt
+from docx.shared import RGBColor
+from docx.oxml import parse_xml
 from dataclasses import dataclass
 import os
 import random
+import io
 
 @dataclass
 class placeholder:
@@ -23,7 +27,6 @@ class placeholder:
     itm_bgt: str = "PLACEHOLDER_ITEM_BUDGET"
     itm_cnt: str = "PLACEHOLDER_ITEM_COUNT"
     itm_sum: str = "PLACEHOLDER_ITEM_SUMUP"
-
 
 def fill_applicant_form(act: activity):
     # 计算act预算，按照用途
@@ -48,7 +51,7 @@ def fill_applicant_form(act: activity):
     doc = Document(template_name)
     for table in doc.tables:
         for row in table.rows:
-            for cell in row.cells:
+            for cell in set(row.cells):
                 for paragraph in cell.paragraphs:
                     if placeholder.act_name in paragraph.text:
                         paragraph.text = paragraph.text.replace(placeholder.act_name, act.name)
@@ -60,7 +63,7 @@ def fill_applicant_form(act: activity):
                         paragraph.text = paragraph.text.replace(placeholder.act_plan, "见后附页" if act.plan else "暂无")
                     if placeholder.act_date in paragraph.text:
                         # 将yyyy-mm-dd转换为yyyy年mm月dd日
-                        date_copy = act.date.copy()
+                        date_copy = act.time
                         date_copy = date_copy.replace("-", "年", 1)
                         date_copy = date_copy.replace("-", "月", 1)
                         paragraph.text = paragraph.text.replace(placeholder.act_date, date_copy)
@@ -73,19 +76,103 @@ def fill_applicant_form(act: activity):
                     for i in range(1, 7):
                         if f"{placeholder.itm_grp}{i}" in paragraph.text:
                             if i <= len(budget):
-                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_grp}_{i}", budget[i-1][0])
+                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_grp}{i}", budget[i-1][0])
                             else:
-                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_grp}_{i}", "")
+                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_grp}{i}", "")
                         if f"{placeholder.itm_bgt}{i}" in paragraph.text:
                             if i <= len(budget):
-                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_bgt}_{i}", str(budget[i-1][1]))
+                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_bgt}{i}", str(budget[i-1][1]))
                             else:
-                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_bgt}_{i}", "")
+                                paragraph.text = paragraph.text.replace(f"{placeholder.itm_bgt}{i}", "")
                     if placeholder.itm_cnt in paragraph.text:
                         paragraph.text = paragraph.text.replace(placeholder.itm_cnt, str(len(budget)))
                     if placeholder.itm_sum in paragraph.text:
                         paragraph.text = paragraph.text.replace(placeholder.itm_sum, str(sum([item[1] for item in budget])))
+
+    doc.add_page_break()
+    title = doc.add_paragraph()
+    title.alignment = 1  # 设置为居中对齐（1表示居中）
+    run = title.add_run("物资管理")
+    run.font.size = Pt(18)
+
+    table = doc.add_table(rows=1, cols=8)
+    # set the table header
+    headers = ['组别', '名称', '数量', '单价', '总价', '用途', '发票', '备注']
+    for idx, header in enumerate(headers):
+        table.cell(0, idx).text = header
+
+    for it in act.item:
+        cells = table.add_row().cells
+        values = [it.group, it.name, it.count, it.price, it.total, it.use,
+            "纸质发票" if it.invoice is None else "发票已上传", it.note]
+        for idx, value in enumerate(values):
+            cells[idx].text = str(value)
+
+    # 组内合计
+    rowIndex = len(table.rows)
+    table.add_row()
+    table.cell(rowIndex, 0).merge(table.cell(rowIndex, len(headers)-1))
+    table.cell(rowIndex, 0).text = "组内合计"
+
+    # 各组总计
+    for group in act.groups:
+        rowIndex = len(table.rows)
+        table.add_row()
+        table.cell(rowIndex, 0).merge(table.cell(rowIndex, 1))
+        table.cell(rowIndex, 2).merge(table.cell(rowIndex, len(headers)-1))
+        table.cell(rowIndex, 0).text = group
+        table.cell(rowIndex, 2).text = str(sum(it.total if it.total else 0 for it in act.item if it.group == group))
+
+    # 合计
+    rowIndex = len(table.rows)
+    table.add_row()
+    table.cell(rowIndex, 0).merge(table.cell(rowIndex, 6))
+    table.cell(rowIndex, 0).text = "合计"
+    table.cell(rowIndex, 7).text = str(sum(it.total if it.total else 0 for it in act.item))
+
+    # 增加边框
+    for row in table.rows:
+        for cell in row.cells:
+            # 获取单元格的tcPr对象
+            tcPr = cell._tc.get_or_add_tcPr()
+
+            # 创建边框元素
+            borders = parse_xml(r'<w:tcBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                                r'<w:top w:val="single" w:color="000000" w:sz="8"/>'
+                                r'<w:bottom w:val="single" w:color="000000" w:sz="8"/>'
+                                r'<w:left w:val="single" w:color="000000" w:sz="8"/>'
+                                r'<w:right w:val="single" w:color="000000" w:sz="8"/>'
+                                r'</w:tcBorders>')
+
+            # 将边框样式应用到单元格
+            tcPr.append(borders)
+
+    # 组别合并
+    index = [-1]
+    for i in range(len(act.item) - 1):
+        if act.item[i].group != act.item[i + 1].group:
+            index.append(i)
+    index.append(len(act.item) - 1)
+    for i in range(len(index) - 1):
+        start, end = index[i] + 1, index[i + 1]
+        table.cell(start + 1, 0).merge(table.cell(end + 1, 0))
+        table.cell(start + 1, 0).text = act.item[start].group
+
+    # 策划书
+    doc.add_page_break()
+    plan = Document(io.BytesIO(act.plan))
+    plan.add_page_break()
+    for element in plan.element.body:
+        doc.element.body.append(element)
+
+    # 新闻稿
+    news = Document(io.BytesIO(act.news))
+    for element in news.element.body:
+        doc.element.body.append(element)
+
     # save the file
     doc.save(form_name)
     # provide download
     put_file(f"{act.name}_{int(time())}.docx", content=open(form_name, "rb").read())
+    # remove the file
+    os.remove(form_name)
