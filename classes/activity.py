@@ -54,10 +54,10 @@ class activity:
         dump_item = [it.to_dict() for it in dump_dict["items"]]
         # 处理新闻稿，这个新闻稿是bytes格式的，需要转换成base64
         if dump_dict["news"] is not None:
-            dump_dict["news"] = to_base64(dump_dict["news"]['content'])
+            dump_dict["news"] = to_base64(dump_dict["news"])
         # 处理策划书
         if dump_dict["plan"] is not None:
-            dump_dict["plan"] = to_base64(dump_dict["plan"]['content'])
+            dump_dict["plan"] = to_base64(dump_dict["plan"])
         dump_dict["director"] = dump_director
         dump_dict["items"] = dump_item
         return json.dumps(dump_dict)

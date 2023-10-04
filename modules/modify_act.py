@@ -74,7 +74,7 @@ def modify_act_plan(act: activity):
 def modify_act_plan_upload(act: activity):
     upload = file_upload("请上传策划书", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
     if upload is not None:
-        act.plan = upload
+        act.plan = upload['content']
 
 # 预览当前策划书
 def modify_act_plan_preview(act: activity):
@@ -82,7 +82,7 @@ def modify_act_plan_preview(act: activity):
         toast("当前活动没有策划书，请先上传策划书")
         return
     else:
-        content = act.plan["content"]
+        content = act.plan
         put_file(f"{act.name}策划书_{int(time())}.docx", content=content)
 
 # 修改新闻稿
@@ -102,7 +102,7 @@ def modify_act_news(act: activity):
 def modify_act_news_upload(act: activity):
     upload = file_upload("请上传新闻稿", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
     if upload is not None:
-        act.news = upload
+        act.news = upload['content']
 
 # 预览当前新闻稿
 def modify_act_news_preview(act: activity):
@@ -110,5 +110,5 @@ def modify_act_news_preview(act: activity):
         toast("当前活动没有新闻稿，请先上传新闻稿")
         return
     else:
-        content = act.news["content"]
+        content = act.news
         put_file(f"{act.name}新闻稿_{int(time())}.docx", content=content)

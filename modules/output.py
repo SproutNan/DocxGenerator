@@ -18,6 +18,10 @@ def _replace(placeholder: str, paragraph, text: str):
 
 # 将活动输出为docx
 def to_docx(act: activity):
+    if len(act.items) == 0:
+        toast("活动物资为空，无法生成申请表")
+        return
+
     # 计算act预算，按照用途
     budget = {}
     for item in act.items:
@@ -34,7 +38,7 @@ def to_docx(act: activity):
     # 生成保存文件
     time_stamp = int(time())
     random_num = random.randint(1000,9999)
-    template_name = "./template_applicant_form.docx"
+    template_name = "./templates/template_applicant_form.docx"
     form_name = f"./temp_form_{time_stamp}_{random_num}.docx"
     # fill the template file
     doc = Document(template_name)
@@ -141,7 +145,6 @@ def to_docx(act: activity):
     for element in news.element.body:
         doc.element.body.append(element)
 
-    # 
 
     # save the file
     doc.save(form_name)
