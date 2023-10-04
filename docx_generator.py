@@ -42,16 +42,6 @@ def create_activity_record():
     )
     return activity_new
 
-# 下载存档
-def download(act: activity):
-    # 下载activity的json版本
-    serialized = act.to_json()
-    # 提供文件下载
-    put_file(f"{act.name}_{int(time())}.json",
-             content=serialized.encode("utf-8"))
-    # 退出
-    return None
-
 # 为活动添加策划书，物资等
 def activity_operating(act: activity):
     if act is None:
@@ -59,18 +49,16 @@ def activity_operating(act: activity):
     while True:
         # 创建一个按钮菜单
         action = actions(label=f"对[{act.name}]的操作", buttons=[
-            {'label': "管理活动概况", 'value': "modify_info"},
-            {'label': "管理活动物资", 'value': "modify_item"},
-            {'label': "合并存档", 'value': "merge"},
-            {'label': "下载存档", 'value': "download"},
-            {'label': "退出对此活动的操作", 'value': "back"}
+            {'label': "管理概况", 'value': "modify_info"},
+            {'label': "管理物资", 'value': "modify_item"},
+            {'label': "导出", 'value': "output"},
+            {'label': "退出", 'value': "back"}
         ], help_text=f"详细信息：{act.info()}")
         # 根据选择的操作进行处理
         value_map = {
             "modify_info": modify_info,
             "modify_item": modify_item,
-            "merge": merge,
-            "download": download,
+            "output": output,
             "back": None
         }
         if value_map[action] is None:
@@ -90,20 +78,14 @@ def docx_generator_main():
         # 选择创建还是读取
         action = actions(label="请选择操作", buttons=[
             {'label': "创建新活动", 'value': "create"},
-            {'label': "读取已有活动", 'value': "read"},
-            {'label': "将存档转换为docx供打印", 'value': "convert"}
+            {'label': "读取已有活动", 'value': "read"}
         ])
-        if action == "read" or action == "convert":
+        if action == "read":
             # 读取已有活动
             activity_file = file_upload("请上传活动存档", accept=".json")
             try:
                 activitys = activity()
                 activitys.from_json(activity_file["content"].decode("utf-8"))
-                if action == "convert":
-                    # 转换为docx
-                    to_docx(activitys)
-                    # 下载docx
-                    # put_file(f"{activitys.name}_{int(time())}.docx", content=activitys.docx)
             except Exception as e:
                 print(e)
                 # get error line
@@ -115,8 +97,7 @@ def docx_generator_main():
         elif action == "create":
             activitys = create_activity_record()
         # 为活动添加策划书，物资等(编辑模式)
-        if action != "convert":
-            activity_operating(activitys)
+        activity_operating(activitys)
         # 是否退出
         if actions(label="你的工作都完成了吗？", buttons=[
             {'label': "是的，退出", 'value': "exit"},

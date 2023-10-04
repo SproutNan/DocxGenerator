@@ -1,6 +1,7 @@
 import os
 import io
 import random
+import zipfile
 from classes.activity import activity
 from classes.placeholder import placeholder
 from pywebio.input import *
@@ -9,12 +10,66 @@ from pywebio.pin import *
 from time import time
 from modules.base64_coder import *
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Inches
 from docx.oxml import parse_xml
+from PIL import Image
 
 def _replace(placeholder: str, paragraph, text: str):
     if placeholder in paragraph.text:
         paragraph.text = paragraph.text.replace(placeholder, text)
+
+def output(act: activity):
+    while True:
+        action = actions(label=f"导出活动[{act.name}]的信息", buttons=[
+            {'label': "下载JSON存档", 'value': "to_json"},
+            {'label': "生成DOCX材料", 'value': "to_docx"},
+            {'label': "导出所有电子发票", 'value': "output_invoice"},
+            {'label': "返回上一级", 'value': "back"}
+        ], help_text=f"详细信息：{act.info()}")
+        value_map = {
+            "to_json": to_json,
+            "to_docx": to_docx,
+            "output_invoice": output_invoice,
+            "back": None
+        }
+        if value_map[action] is None:
+            break
+        else:
+            value_map[action](act)
+
+# 导出所有电子发票
+def output_invoice(act: activity):
+    # 格式选择：所有发票打包成zip，或者放进一个pdf单独导出
+    format = select("请选择导出格式：", options=["zip", "pdf"], required=True, help_text="zip格式可以一次性下载所有发票，所有发票的图片将被打包成一个zip文件；pdf格式将所有发票放进一个pdf文件中")
+    # 根据选择进行处理
+    if format == "zip":
+        # 生成zip文件
+        time_stamp = int(time())
+        random_num = random.randint(1000,9999)
+        zip_name = f"./temp_invoice_{time_stamp}_{random_num}.zip"
+        # 创建zip文件
+        with zipfile.ZipFile(zip_name, "w") as zip:
+            for item in act.items:
+                if item.invoice is not None:
+                    # TODO: 上传发票时，不一定全是JPG(将发票写入内存时，建议全部转成JPG格式)
+                    content = from_base64(item.invoice)
+                    zip.writestr(f"{item.name}.jpg", content)
+        # 提供下载
+        put_file(f"{act.name}_{int(time())}.zip", content=open(zip_name, "rb").read())
+        # 删除zip文件
+        os.remove(zip_name)
+    else:
+        # TODO: 生成pdf文件
+        toast("暂不支持pdf格式导出")
+
+# 下载json存档
+def to_json(act: activity):
+    serialized = act.to_json()
+    # 提供文件下载
+    put_file(f"{act.name}_{int(time())}.json",
+             content=serialized.encode("utf-8"))
+    # 退出
+    return None
 
 # 将活动输出为docx
 def to_docx(act: activity):
@@ -145,6 +200,28 @@ def to_docx(act: activity):
     for element in news.element.body:
         doc.element.body.append(element)
 
+    # 发票
+    for item in act.items:
+        if item.invoice is not None:
+            title = doc.add_paragraph()
+            run = title.add_run(f"{item.name}的发票，用途：{item.use}")
+            run.font.size = Pt(12)
+            # invoice 是 JPG 格式的 bytes 转成的 base64 字符串
+            invoice = from_base64(item.invoice)
+            invoice = io.BytesIO(invoice)
+            invoice_img = Image.open(invoice)
+            rotated_image_stream = io.BytesIO()
+            rotated_image = invoice_img.rotate(-90, expand=True)
+            rotated_image.save(rotated_image_stream, format='PNG')
+            rotated_image_stream.seek(0)
+            doc.add_picture(rotated_image_stream, width=Inches(5.5), height=Inches(9))
+            doc.add_page_break()
+        else:
+            # 如果没有发票，就添加template_paper_invoice.docx
+            template_name = "./templates/template_paper_invoice.docx"
+            template = Document(template_name)
+            for element in template.element.body:
+                doc.element.body.append(element)
 
     # save the file
     doc.save(form_name)

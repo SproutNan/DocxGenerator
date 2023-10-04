@@ -8,21 +8,22 @@ from time import time
 
 # 管理活动概况
 def modify_info(act: activity):
-    action = actions(label=f"管理活动[{act.name}]概况", buttons=[
-        {'label': "修改活动信息", 'value': "modify_act_info"},
-        {'label': "管理策划书", 'value': "modify_act_plan"},
-        {'label': "管理新闻稿", 'value': "modify_act_news"},
-        {'label': "返回上一级", 'value': "back"}
-    ], help_text=f"详细信息：{act.info()}")
+    while True:
+        action = actions(label=f"管理活动[{act.name}]概况", buttons=[
+            {'label': "修改活动信息", 'value': "modify_act_info"},
+            {'label': "管理策划书", 'value': "modify_act_plan"},
+            {'label': "管理新闻稿", 'value': "modify_act_news"},
+            {'label': "返回上一级", 'value': "back"}
+        ], help_text=f"详细信息：{act.info()}")
 
-    if action == "modify_act_info":
-        modify_act_info(act)
-    elif action == "modify_act_plan":
-        modify_act_plan(act)
-    elif action == "modify_act_news":
-        modify_act_news(act)
-    else:
-        return
+        if action == "modify_act_info":
+            modify_act_info(act)
+        elif action == "modify_act_plan":
+            modify_act_plan(act)
+        elif action == "modify_act_news":
+            modify_act_news(act)
+        else:
+            break
 
 # 修改活动信息
 def modify_act_info(act: activity):
@@ -59,56 +60,76 @@ def modify_act_info(act: activity):
 
 # 修改策划书
 def modify_act_plan(act: activity):
-    action = actions(label=f"管理活动[{act.name}]的策划书", buttons=[
-        {'label': "上传新的策划书", 'value': "modify_act_plan_upload"},
-        {'label': "预览当前策划书", 'value': "modify_act_plan_preview"},
-        {'label': "返回上一级", 'value': "back"}
-    ], help_text=f"详细信息：{act.info()}")
+    while True:
+        action = actions(label=f"管理活动[{act.name}]的策划书", buttons=[
+            {'label': "上传新的策划书", 'value': "modify_act_plan_upload"},
+            {'label': "预览当前策划书", 'value': "modify_act_plan_preview"},
+            {'label': "返回上一级", 'value': "back"}
+        ], help_text=f"详细信息：{act.info()}")
 
-    if action == "modify_act_plan_upload":
-        modify_act_plan_upload(act)
-    elif action == "modify_act_plan_preview":
-        modify_act_plan_preview(act)
+        if action == "modify_act_plan_upload":
+            modify_act_plan_upload(act)
+        elif action == "modify_act_plan_preview":
+            modify_act_plan_preview(act)
+        else:
+            break
 
 # 添加策划书
 def modify_act_plan_upload(act: activity):
-    upload = file_upload("请上传策划书", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
-    if upload is not None:
-        act.plan = upload['content']
+    try:
+        upload = file_upload("请上传策划书", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
+        if upload is not None:
+            act.plan = upload['content']
+        toast("上传策划书成功！")
+    except Exception as e:
+        popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 预览当前策划书
 def modify_act_plan_preview(act: activity):
-    if act.plan is None:
-        toast("当前活动没有策划书，请先上传策划书")
-        return
-    else:
-        content = act.plan
-        put_file(f"{act.name}策划书_{int(time())}.docx", content=content)
+    try:
+        if act.plan is None:
+            toast("当前活动没有策划书，请先上传策划书")
+            return
+        else:
+            content = act.plan
+            put_file(f"{act.name}策划书_{int(time())}.docx", content=content)
+    except Exception as e:
+        popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 修改新闻稿
 def modify_act_news(act: activity):
-    action = actions(label=f"管理活动[{act.name}]的新闻稿", buttons=[
-        {'label': "上传新的新闻稿", 'value': "modify_act_news_upload"},
-        {'label': "预览当前新闻稿", 'value': "modify_act_news_preview"},
-        {'label': "返回上一级", 'value': "back"}
-    ], help_text=f"详细信息：{act.info()}")
+    while True:
+        action = actions(label=f"管理活动[{act.name}]的新闻稿", buttons=[
+            {'label': "上传新的新闻稿", 'value': "modify_act_news_upload"},
+            {'label': "预览当前新闻稿", 'value': "modify_act_news_preview"},
+            {'label': "返回上一级", 'value': "back"}
+        ], help_text=f"详细信息：{act.info()}")
 
-    if action == "modify_act_news_upload":
-        modify_act_news_upload(act)
-    elif action == "modify_act_news_preview":
-        modify_act_news_preview(act)
+        if action == "modify_act_news_upload":
+            modify_act_news_upload(act)
+        elif action == "modify_act_news_preview":
+            modify_act_news_preview(act)
+        else:
+            break
 
 # 添加新闻稿
 def modify_act_news_upload(act: activity):
-    upload = file_upload("请上传新闻稿", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
-    if upload is not None:
-        act.news = upload['content']
+    try:
+        upload = file_upload("请上传新闻稿", accept=".docx", max_size=1024*1024*5, help_text="请上传小于5MB的docx文件")
+        if upload is not None:
+            act.news = upload['content']
+        toast("上传新闻稿成功！")
+    except Exception as e:
+        popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 预览当前新闻稿
 def modify_act_news_preview(act: activity):
-    if act.news is None:
-        toast("当前活动没有新闻稿，请先上传新闻稿")
-        return
-    else:
-        content = act.news
-        put_file(f"{act.name}新闻稿_{int(time())}.docx", content=content)
+    try:
+        if act.news is None:
+            toast("当前活动没有新闻稿，请先上传新闻稿")
+            return
+        else:
+            content = act.news
+            put_file(f"{act.name}新闻稿_{int(time())}.docx", content=content)
+    except Exception as e:
+        popup("错误提示", f"应用内部错误，请联系管理员\n{e}")

@@ -32,7 +32,7 @@ class item:
         # 购买截图
         self.screenshot: str = None
         # 相关说明
-        self.note: str = None
+        self.note: str = ""
     
     def to_dict(self) -> dict:
         """
@@ -69,4 +69,4 @@ class item:
         """
         返回物品信息（八个成员均包含）的md5值
         """
-        return md5(self.name + str(self.count) + str(self.price) + str(self.total) + self.use + self.group + self.invoice + self.note + self.screenshot).hexdigest()
+        return md5((self.name + str(self.count) + str(self.price) + str(self.total) + self.use + self.group + self.note).encode()).hexdigest()

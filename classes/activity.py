@@ -105,7 +105,7 @@ class activity:
         part3 = self.plan + self.news
         part4 = sum([i.md5().hexdigest() for i in self.items])
         part5 = ",".join(self.groups)
-        return md5(part1 + part2 + part3 + part4 + part5).hexdigest()
+        return md5((part1 + part2 + part3 + part4 + part5).encode()).hexdigest()
     
     def lmd5(self) -> str:
         """
@@ -115,4 +115,4 @@ class activity:
         part2 = self.director.md5().hexdigest()
         part3 = ("有" if self.plan is not None else "无") + ("有" if self.news is not None else "无")
         part4 = ",".join(self.groups)
-        return md5(part1 + part2 + part3 + part4).hexdigest()
+        return md5((part1 + part2 + part3 + part4).encode()).hexdigest()

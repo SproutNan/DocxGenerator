@@ -16,12 +16,14 @@ def modify_item(act: activity) -> bool:
             {'label': "管理物资标签", 'value': "modify_item_label"},
             {'label': "添加物资", 'value': "modify_item_add"},
             {'label': "查看物资", 'value': "modify_item_show"},
+            {'label': "删除物资", 'value': "modify_item_delete"},
             {'label': "返回上一级", 'value': "back"}
         ], help_text=f"详细信息：{act.info()}")
         value_map = {
             "modify_item_label": modify_item_label,
             "modify_item_add": modify_item_add,
             "modify_item_show": modify_item_show,
+            "modify_item_delete": modify_item_delete,
             "back": None
         }
         if value_map[action] is None:
@@ -74,7 +76,6 @@ def modify_item_add(act: activity):
 
         if actions("是否继续添加物资？", ["是", "否"]) == "否":
             break
-
 
 # 手动输入信息 item 是一个 list 的迭代器
 def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
@@ -142,9 +143,13 @@ def modify_item_add_ocrinv(act: activity):
     file = file_upload("请上传发票", accept=".jpg,.png,.pdf",
                        max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
     image = Image.open(io.BytesIO(file["content"]))
+    put_markdown("正在识别中，请稍等...")
     items = handle_invoice(image)
-    modify_item_add_manual(act, iter(items), file["content"])
-
+    if len(items) > 0:
+        put_markdown("识别成功！")
+        modify_item_add_manual(act, iter(items), file["content"])
+    else:
+        put_markdown("识别失败，请检查发票是否清晰")
 
 # 查看物资
 def modify_item_show(act: activity):
@@ -164,7 +169,7 @@ def modify_item_show(act: activity):
             it.total,
             it.use,
             "纸质发票" if it.invoice is None else "发票已上传",
-            f"{it.note}, 有购买截图" if it.screenshot is not None else it.note,
+            f"{it.note}, 有购买截图" if it.screenshot != "" else it.note,
         ])
     put_items.sort(key=lambda x: x[0])
     put_table_items.extend(put_items)
@@ -182,6 +187,21 @@ def modify_item_show(act: activity):
         sum([it.total if it.total else 0 for it in act.items]), col=1)])
     popup("物资清单", put_table(put_table_items), size=PopupSize.LARGE)
 
+# 删除物资
+def modify_item_delete(act: activity):
+    if len(act.items) == 0:
+        toast("当前活动没有物资，请先添加物资")
+        return
+    # 选择要删除的物资
+    items = [f"{it.group} - {it.name}" for it in act.items]
+    items_md5 = [it.md5() for it in act.items]
+    # 多选题
+    tobe_deleted_item = checkbox("请选择要删除的物资", options=items, required=True)
+    tobe_deleted_index = [items.index(it) for it in tobe_deleted_item]
+    tobe_deleted_md5 = [items_md5[i] for i in tobe_deleted_index]
+    # 删除物资
+    act.items = [it for it in act.items if it.md5() not in tobe_deleted_md5]
+    toast("删除成功！")
 
 # 合并存档
 def merge(act: activity) -> bool:
