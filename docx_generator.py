@@ -88,7 +88,6 @@ def docx_generator_main():
                 activitys.from_json(activity_file["content"].decode("utf-8"))
             except Exception as e:
                 print(e)
-                # get error line
                 import traceback
                 tb = traceback.format_exc()
                 print(tb)

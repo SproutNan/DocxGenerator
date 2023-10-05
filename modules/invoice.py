@@ -52,12 +52,13 @@ def handle_invoice(image: Image.Image) -> list:
                 record.update({"名称": value})
             elif name == "数量":
                 record.update({"数量": int(value)})
-            elif name == "金额":
+            elif name == "单价":
                 record.update({"单价": float(value)})
+            elif name == "金额":
+                record.update({"总价": float(value)})
             elif name == "税额":
                 # 识别到税额则单件物资结束
-                record["单价"] += float(value) if value != "***" else 0
-                record.update({"总价": record["单价"] * record["数量"]})
+                record["总价"] += float(value) if value != "***" else 0
                 items.append(record)
         return items
     except TencentCloudSDKException as err:

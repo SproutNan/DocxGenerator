@@ -13,6 +13,8 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.oxml import parse_xml
 from PIL import Image
+import docx
+from docxcompose.composer import Composer
 
 def _replace(placeholder: str, paragraph, text: str):
     if placeholder in paragraph.text:
@@ -195,9 +197,9 @@ def to_docx(act: activity):
 
 
     # 发票
-    plan.add_page_break()
     for item in act.items:
         if item.invoice is not None:
+            plan.add_page_break()
             title = plan.add_paragraph()
             run = title.add_run(f"{item.name}的发票，用途：{item.use}")
             run.font.size = Pt(12)
@@ -217,18 +219,18 @@ def to_docx(act: activity):
             for element in template.element.body:
                 plan.element.body.append(element)
 
-    # 新闻稿
     plan.add_page_break()
 
-    for element in plan.element.body:
-        doc.element.body.append(element)
+    composer = Composer(doc)
+    composer.append(plan)
 
+    # 新闻稿
     news = Document(io.BytesIO(act.news))
-    for element in news.element.body:
-        doc.element.body.append(element)
+    composer.append(news)
 
     # save the file
-    doc.save(form_name)
+    composer.save(form_name)
+
     # provide download
     put_file(f"{act.name}_{int(time())}.docx", content=open(form_name, "rb").read())
     # remove the file

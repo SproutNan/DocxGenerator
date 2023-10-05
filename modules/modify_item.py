@@ -7,6 +7,10 @@ from pywebio.output import *
 from pywebio.pin import *
 from modules.base64_coder import *
 from modules.invoice import *
+import traceback
+import fitz
+import tempfile
+import os
 
 
 # 管理活动物资
@@ -63,12 +67,16 @@ def modify_item_add(act: activity):
                 if not modify_item_add_manual(act):
                     continue
             except Exception as e:
+                print(e)
+                print(traceback.format_exc())
                 popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
                 continue
         elif action == "modify_item_add_ocrinv":
             try:
                 modify_item_add_ocrinv(act)
             except Exception as e:
+                print(e)
+                print(traceback.format_exc())
                 popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
                 continue
         else:
@@ -124,7 +132,7 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
         item_info["invoice"]["content"] = to_base64(
             item_info["invoice"]["content"])
         item_new.invoice = item_info["invoice"]
-    else:
+    elif iterator is not None and invoice is not None:
         item_new.invoice = to_base64(invoice)
     # 购买截图
     if item_info["screenshot"] is not None:
@@ -142,7 +150,23 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
 def modify_item_add_ocrinv(act: activity):
     file = file_upload("请上传发票", accept=".jpg,.png,.pdf",
                        max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
-    image = Image.open(io.BytesIO(file["content"]))
+    print(file['mime_type'], file['filename'])
+    if file['mime_type'] == 'application/pdf':
+        pdf_bytes = file['content']
+        # 创建临时文件
+        temp_pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        temp_pdf_file.write(pdf_bytes)
+        temp_pdf_file.close()
+        pdf_document = fitz.open(temp_pdf_file.name)
+        if (pdf_document.page_count > 1):
+            put_markdown("PDF文件有多页，只识别第一页")
+        pdf_page = pdf_document.load_page(0)
+        pixmap = pdf_page.get_pixmap()
+        image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+        pdf_document.close()
+        os.remove(temp_pdf_file.name)
+    else:
+        image = Image.open(io.BytesIO(file["content"]))
     put_markdown("正在识别中，请稍等...")
     items = handle_invoice(image)
     if len(items) > 0:
@@ -169,7 +193,7 @@ def modify_item_show(act: activity):
             it.total,
             it.use,
             "纸质发票" if it.invoice is None else "发票已上传",
-            f"{it.note}, 有购买截图" if it.screenshot != "" else it.note,
+            f"{it.note}, 有购买截图" if it.screenshot is not None else it.note,
         ])
     put_items.sort(key=lambda x: x[0])
     put_table_items.extend(put_items)
@@ -217,4 +241,5 @@ def merge(act: activity) -> bool:
         toast("合并成功！")
     except Exception as e:
         print(e)
+        print(traceback.format_exc())
         popup("错误提示", "合并失败，请检查文件格式是否正确。\n如果您是从本系统下载的文件，请检查是否曾经修改过文件内容。")

@@ -5,6 +5,7 @@ from pywebio.input import *
 from pywebio.output import *
 from pywebio.pin import *
 from time import time
+import traceback
 
 # 管理活动概况
 def modify_info(act: activity):
@@ -82,6 +83,8 @@ def modify_act_plan_upload(act: activity):
             act.plan = upload['content']
         toast("上传策划书成功！")
     except Exception as e:
+        print(e)
+        print(traceback.format_exc())
         popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 预览当前策划书
@@ -94,6 +97,8 @@ def modify_act_plan_preview(act: activity):
             content = act.plan
             put_file(f"{act.name}策划书_{int(time())}.docx", content=content)
     except Exception as e:
+        print(e)
+        print(traceback.format_exc())
         popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 修改新闻稿
@@ -120,6 +125,8 @@ def modify_act_news_upload(act: activity):
             act.news = upload['content']
         toast("上传新闻稿成功！")
     except Exception as e:
+        print(e)
+        print(traceback.format_exc())
         popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
 
 # 预览当前新闻稿
@@ -132,4 +139,6 @@ def modify_act_news_preview(act: activity):
             content = act.news
             put_file(f"{act.name}新闻稿_{int(time())}.docx", content=content)
     except Exception as e:
+        print(e)
+        print(traceback.format_exc())
         popup("错误提示", f"应用内部错误，请联系管理员\n{e}")
