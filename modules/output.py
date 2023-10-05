@@ -119,22 +119,26 @@ def to_docx(act: activity):
                             _replace(f"{placeholder.itm_grp}{i}", paragraph, "")
                             _replace(f"{placeholder.itm_bgt}{i}", paragraph, "")
 
+    # 策划书
     doc.add_page_break()
-    title = doc.add_paragraph()
+    plan = Document(io.BytesIO(act.plan))
+    plan.add_page_break()
+
+    # 物资清单
+    title = plan.add_paragraph()
     title.alignment = 1  # 设置为居中对齐（1表示居中）
     run = title.add_run("活动物资清单")
     run.font.size = Pt(18)
 
-    table = doc.add_table(rows=1, cols=8)
+    table = plan.add_table(rows=1, cols=7)
     # set the table header
-    headers = ['组别', '名称', '数量', '单价', '总价', '用途', '发票', '备注']
+    headers = ['组别', '名称', '数量', '单价', '总价', '用途', '备注']
     for idx, header in enumerate(headers):
         table.cell(0, idx).text = header
 
     for it in act.items:
         cells = table.add_row().cells
-        values = [it.group, it.name, it.count, it.price, it.total, it.use,
-            "纸质发票" if it.invoice is None else "发票已上传", it.note]
+        values = [it.group, it.name, it.count, it.price, it.total, it.use, it.note]
         for idx, value in enumerate(values):
             cells[idx].text = str(value)
 
@@ -156,9 +160,9 @@ def to_docx(act: activity):
     # 合计
     rowIndex = len(table.rows)
     table.add_row()
-    table.cell(rowIndex, 0).merge(table.cell(rowIndex, 6))
+    table.cell(rowIndex, 0).merge(table.cell(rowIndex, 5))
     table.cell(rowIndex, 0).text = "合计"
-    table.cell(rowIndex, 7).text = str(sum(it.total if it.total else 0 for it in act.items))
+    table.cell(rowIndex, 6).text = str(sum(it.total if it.total else 0 for it in act.items))
 
     # 增加边框
     for row in table.rows:
@@ -188,22 +192,13 @@ def to_docx(act: activity):
         table.cell(start + 1, 0).merge(table.cell(end + 1, 0))
         table.cell(start + 1, 0).text = act.items[start].group
 
-    # 策划书
-    doc.add_page_break()
-    plan = Document(io.BytesIO(act.plan))
-    plan.add_page_break()
-    for element in plan.element.body:
-        doc.element.body.append(element)
 
-    # 新闻稿
-    news = Document(io.BytesIO(act.news))
-    for element in news.element.body:
-        doc.element.body.append(element)
 
     # 发票
+    plan.add_page_break()
     for item in act.items:
         if item.invoice is not None:
-            title = doc.add_paragraph()
+            title = plan.add_paragraph()
             run = title.add_run(f"{item.name}的发票，用途：{item.use}")
             run.font.size = Pt(12)
             # invoice 是 JPG 格式的 bytes 转成的 base64 字符串
@@ -214,14 +209,23 @@ def to_docx(act: activity):
             rotated_image = invoice_img.rotate(-90, expand=True)
             rotated_image.save(rotated_image_stream, format='PNG')
             rotated_image_stream.seek(0)
-            doc.add_picture(rotated_image_stream, width=Inches(5.5), height=Inches(9))
-            doc.add_page_break()
+            plan.add_picture(rotated_image_stream, width=Inches(5.5), height=Inches(9))
         else:
             # 如果没有发票，就添加template_paper_invoice.docx
             template_name = "./templates/template_paper_invoice.docx"
             template = Document(template_name)
             for element in template.element.body:
-                doc.element.body.append(element)
+                plan.element.body.append(element)
+
+    # 新闻稿
+    plan.add_page_break()
+
+    for element in plan.element.body:
+        doc.element.body.append(element)
+
+    news = Document(io.BytesIO(act.news))
+    for element in news.element.body:
+        doc.element.body.append(element)
 
     # save the file
     doc.save(form_name)
