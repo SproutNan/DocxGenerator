@@ -69,7 +69,7 @@ def activity_operating(act: activity):
 
 def docx_generator_main():
     # 文字说明
-    put_markdown("# 校芳草社活动报销处理系统")
+    put_markdown("# 学生活动报销处理系统")
     put_markdown("- 您只需要按照提示输入相关信息，系统会自动创建活动报销用的docx文件供打印。")
     put_markdown(
         "- 注意，本系统是**脱机系统**，不保存您的任何信息，也不会上传到任何服务器。您在完成编辑之后，请下载文件并保存到本地。如果需要二次修改，请将之前保存的文件上传到浏览器打开。（你可以理解为需要手动存档读档，这是为了减轻服务器端的开销）")
