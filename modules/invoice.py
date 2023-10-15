@@ -1,4 +1,4 @@
-import json
+﻿import json
 import math
 import base64
 from PIL import Image
@@ -11,8 +11,8 @@ from tencentcloud.ocr.v20181119 import ocr_client, models
 
 threshold = 2097152
 
-secretId = ""
-secretKey = ""
+secretId = "AKID8JH6i8MOBj3A4jCRSEtMbcOxKSM3Xoqt"
+secretKey = "qUt4SjmbFepmDQPAh3B4j9KHzsZ5PXUC"
 
 def handle_invoice(image: Image.Image) -> list:
     width, height = image.size

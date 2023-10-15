@@ -1,4 +1,4 @@
-import os
+﻿import os
 import io
 import random
 import zipfile
@@ -46,6 +46,7 @@ def output_invoice(act: activity):
     # 根据选择进行处理
     if format == "zip":
         # 生成zip文件
+        _flag = False
         time_stamp = int(time())
         random_num = random.randint(1000,9999)
         zip_name = f"./temp_invoice_{time_stamp}_{random_num}.zip"
@@ -54,8 +55,12 @@ def output_invoice(act: activity):
             for item in act.items:
                 if item.invoice is not None:
                     # TODO: 上传发票时，不一定全是JPG(将发票写入内存时，建议全部转成JPG格式)
+                    _flag = True
                     content = from_base64(item.invoice)
                     zip.writestr(f"{item.name}.jpg", content)
+        if _flag == False:
+            toast("没有电子发票可以下载")
+            return
         # 提供下载
         put_file(f"{act.name}_{int(time())}.zip", content=open(zip_name, "rb").read())
         # 删除zip文件
@@ -122,9 +127,12 @@ def to_docx(act: activity):
                             _replace(f"{placeholder.itm_bgt}{i}", paragraph, "")
 
     # 策划书
-    doc.add_page_break()
-    plan = Document(io.BytesIO(act.plan))
-    plan.add_page_break()
+    if act.plan is not None:
+        doc.add_page_break()
+        plan = Document(io.BytesIO(act.plan))
+        plan.add_page_break()
+    else:
+        plan = doc
 
     # 物资清单
     title = plan.add_paragraph()
@@ -225,8 +233,9 @@ def to_docx(act: activity):
     composer.append(plan)
 
     # 新闻稿
-    news = Document(io.BytesIO(act.news))
-    composer.append(news)
+    if act.news is not None:
+        news = Document(io.BytesIO(act.news))
+        composer.append(news)
 
     # save the file
     composer.save(form_name)

@@ -1,9 +1,10 @@
-from classes.activity import *
+﻿from classes.activity import *
 from classes.item import *
 from classes.student import *
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.pin import *
+from pywebio.session import *
 from time import time
 from modules.base64_coder import *
 from modules.invoice import *
@@ -68,11 +69,12 @@ def activity_operating(act: activity):
 
 
 def docx_generator_main():
-    # 文字说明
-    put_markdown("# 学生活动报销处理系统")
+    set_env(title="学生活动报销材料整理系统")
+    put_markdown("# 学生活动报销材料整理系统")
     put_markdown("- 您只需要按照提示输入相关信息，系统会自动创建活动报销用的docx文件供打印。")
     put_markdown(
-        "- 注意，本系统是**脱机系统**，不保存您的任何信息，也不会上传到任何服务器。您在完成编辑之后，请下载文件并保存到本地。如果需要二次修改，请将之前保存的文件上传到浏览器打开。（你可以理解为需要手动存档读档，这是为了减轻服务器端的开销）")
+        "- 注意，本系统是**脱机系统**，不保存您的任何信息，也不会上传到任何服务器。您在完成编辑之后，请**下载文件并保存到本地**。如果需要二次修改，请将之前保存的文件上传到浏览器打开。（你可以理解为需要手动存档读档，这是为了减轻服务器端的开销）")
+    put_markdown("使用中若遇到问题请邮件联系 sprout@mail.ustc.edu.cn")
     while True:
         put_markdown("---")
         # 选择创建还是读取
@@ -104,3 +106,8 @@ def docx_generator_main():
         ]) == "exit":
             break
     put_markdown("再见，祝您工作顺利！")
+
+from pywebio import start_server
+
+if __name__ == '__main__':
+    start_server(docx_generator_main, port=8080)
