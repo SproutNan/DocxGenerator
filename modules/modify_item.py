@@ -105,13 +105,13 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
         # 选择题
         select("用途", options=["奖品", "物资", "其他"], name="use", required=True),
         input("备注", type="text", name="note"),
-        file_upload("网购购买截图", name="screenshot", accept=".jpg,.png", max_size=1024 * 1024 * 2,
-                    help_text="请上传网购购买截图，大小不得超过2M，如果不上传则认为是线下购买")
+        file_upload("网购购买截图", name="screenshot", accept=".jpg", max_size=1024 * 1024 * 2,
+                    help_text="请上传JPG格式的网购购买截图，大小不得超过2M，如果不上传则认为是线下购买")
     ]
 
     if iterator is None:
-        inputs.insert(-1, file_upload("发票", name="invoice", accept=".jpg,.png,.pdf", max_size=1024 * 1024 * 2,
-                                      help_text="请上传发票的扫描件或者照片，大小不得超过2M，如果不上传则默认使用纸质发票"), )
+        inputs.insert(-1, file_upload("发票", name="invoice", accept=".jpg,.pdf", max_size=1024 * 1024 * 2,
+                                      help_text="请上传发票的扫描件或者JPG格式图片，大小不得超过2M，如果不上传则默认使用纸质发票"), )
 
     item_info = input_group("请输入物资信息：", inputs)
     item_new = item(
@@ -148,7 +148,7 @@ def modify_item_add_manual(act: activity, iterator=None, invoice: bytes = None):
 
 # 发票自动识别
 def modify_item_add_ocrinv(act: activity):
-    file = file_upload("请上传发票", accept=".jpg,.png,.pdf",
+    file = file_upload("请上传发票", accept=".jpg,.pdf",
                        max_size=1024*1024*2, help_text="请上传发票的扫描件或者照片，大小不得超过2M")
     print(file['mime_type'], file['filename'])
     if file['mime_type'] == 'application/pdf':
@@ -163,15 +163,22 @@ def modify_item_add_ocrinv(act: activity):
         pdf_page = pdf_document.load_page(0)
         pixmap = pdf_page.get_pixmap()
         image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+        content = image.tobytes()
         pdf_document.close()
         os.remove(temp_pdf_file.name)
     else:
-        image = Image.open(io.BytesIO(file["content"]))
+        try:
+            image = Image.open(io.BytesIO(file["content"]))
+            content = file["content"]
+        except Exception as e:
+            print(e)
+            popup("错误提示", "图片格式错误，请上传JPG格式的图片")
+            return
     put_markdown("正在识别中，请稍等...")
     items = handle_invoice(image)
-    if len(items) > 0:
+    if items is not None and len(items) > 0:
         put_markdown("识别成功！")
-        modify_item_add_manual(act, iter(items), file["content"])
+        modify_item_add_manual(act, iter(items), content)
     else:
         put_markdown("识别失败，请检查发票是否清晰")
 

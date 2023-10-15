@@ -1,2 +1,6 @@
 pywebio
 tencentcloud-sdk-python
+Pillow
+PyMuPDF
+python-docx
+docxcompose

@@ -15,18 +15,21 @@ secretId = "AKID8JH6i8MOBj3A4jCRSEtMbcOxKSM3Xoqt"
 secretKey = "qUt4SjmbFepmDQPAh3B4j9KHzsZ5PXUC"
 
 def handle_invoice(image: Image.Image) -> list:
-    width, height = image.size
-    if width >= height:
-        newWidth = int(math.sqrt(threshold / 2))
-        newHeight = int(newWidth * height * 1.0 / width)
-    else:
-        newHeight = int(math.sqrt(threshold / 2))
-        newWidth = int(newHeight * width * 1.0 / height)
-    resized = image.resize((newWidth, newHeight))
-    buffer = BytesIO()
-    resized.save(buffer, format="PNG")
-    encodeImg = base64.b64encode(buffer.getvalue())
-    baseImg = str(encodeImg, 'utf-8')
+    try:
+        width, height = image.size
+        if width >= height:
+            newWidth = int(math.sqrt(threshold / 2))
+            newHeight = int(newWidth * height * 1.0 / width)
+        else:
+            newHeight = int(math.sqrt(threshold / 2))
+            newWidth = int(newHeight * width * 1.0 / height)
+        resized = image.resize((newWidth, newHeight))
+        buffer = BytesIO()
+        resized.save(buffer, format="PNG")
+        encodeImg = base64.b64encode(buffer.getvalue())
+        baseImg = str(encodeImg, 'utf-8')
+    except Exception as e:
+        return None
 
     try:
         cred = credential.Credential(secretId, secretKey)
