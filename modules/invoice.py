@@ -2,6 +2,7 @@ import json
 import math
 import base64
 from PIL import Image
+from io import BytesIO
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
@@ -12,8 +13,6 @@ threshold = 2097152
 
 secretId = ""
 secretKey = ""
-fileName = "./bill.png"
-outputFileName = "./out_bill.png"
 
 def handle_invoice(image: Image.Image) -> list:
     width, height = image.size
@@ -24,8 +23,9 @@ def handle_invoice(image: Image.Image) -> list:
         newHeight = int(math.sqrt(threshold / 2))
         newWidth = int(newHeight * width * 1.0 / height)
     resized = image.resize((newWidth, newHeight))
-    resized.save(outputFileName)
-    encodeImg = base64.b64encode(open(outputFileName, "rb").read())
+    buffer = BytesIO()
+    resized.save(buffer, format="PNG")
+    encodeImg = base64.b64encode(buffer.getvalue())
     baseImg = str(encodeImg, 'utf-8')
 
     try:
