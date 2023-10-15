@@ -163,7 +163,9 @@ def modify_item_add_ocrinv(act: activity):
         pdf_page = pdf_document.load_page(0)
         pixmap = pdf_page.get_pixmap()
         image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
-        content = image.tobytes()
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        content = buffer.getvalue()
         pdf_document.close()
         os.remove(temp_pdf_file.name)
     else:

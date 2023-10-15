@@ -253,6 +253,9 @@ def to_docx(act: activity):
         put_file(f"{act.name}_{int(time())}.docx", content=open(form_name, "rb").read())
     except Exception as e:
         print(e)
+        import traceback
+        tb = traceback.format_exc()
+        print(tb)
         toast("下载失败，请联系管理员")
     finally:
         if form_name not in os.listdir():
