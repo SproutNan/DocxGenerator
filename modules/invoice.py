@@ -31,6 +31,7 @@ def handle_invoice(image: Image.Image) -> list:
     except Exception as e:
         return None
 
+    items = []
     try:
         cred = credential.Credential(secretId, secretKey)
         httpProfile = HttpProfile()
@@ -47,7 +48,6 @@ def handle_invoice(image: Image.Image) -> list:
         response = client.VatInvoiceOCR(req)
         infos = json.loads(response.to_json_string())
 
-        items = []
         for info in infos["VatInvoiceInfos"]:
             name, value = info['Name'], info['Value']
             if name == "货物或应税劳务、服务名称":
@@ -63,6 +63,7 @@ def handle_invoice(image: Image.Image) -> list:
                 # 识别到税额则单件物资结束
                 record["总价"] += float(value) if value != "***" else 0
                 items.append(record)
-        return items
-    except TencentCloudSDKException as err:
+    except Exception as err:
         print(err)
+    finally:
+        return items
