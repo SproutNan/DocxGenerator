@@ -50,8 +50,8 @@ def handle_invoice(image: Image.Image) -> list:
 
         for info in infos["VatInvoiceInfos"]:
             name, value = info['Name'], info['Value']
+            record = {}
             if name == "货物或应税劳务、服务名称":
-                record = {}
                 record.update({"名称": value})
             elif name == "数量":
                 record.update({"数量": int(value)})
